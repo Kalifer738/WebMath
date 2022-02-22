@@ -25,7 +25,6 @@ class display {
             display.output = output;
         }
         display.displayString("Hello World!");
-        console.log(display.getFirstumberAndEndIdex("2-1"));
     }
     static eventInput() {
         display.updateLastChar();
@@ -57,6 +56,43 @@ class display {
         }
         return false;
     }
+    static isCharNumber(value) {
+        switch (value) {
+            case "0": return true;
+            case "1": return true;
+            case "2": return true;
+            case "3": return true;
+            case "4": return true;
+            case "5": return true;
+            case "6": return true;
+            case "7": return true;
+            case "8": return true;
+            case "9": return true;
+            default: return false;
+        }
+    }
+    static isCharEquasion(value) {
+        switch (value) {
+            case "(": return true;
+            case ")": return true;
+            case "√": return true;
+            default: return false;
+        }
+    }
+    static isCharStartOfEquasion(value) {
+        switch (value) {
+            case "(": return true;
+            case "√": return true;
+            default: return false;
+        }
+    }
+    static isCharEndOfEquasion(value) {
+        switch (value) {
+            case "(": return true;
+            case "√": return true;
+            default: return false;
+        }
+    }
     static readInput() {
         return display.userInput.value;
     }
@@ -65,35 +101,133 @@ class display {
     }
     static solve() {
         let equasions = display.getEquasions(display.readInput());
+        console.log(equasions);
+        // let answer = display.userInput.value;
+        // for (let i = 0; i < display.userInput.value.length - 1; i += 2) {
+        //     const number1 = display.userInput.value[i + 1];
+        //     const operad = display.userInput.value[i + 1];
+        //     const number2 = display.userInput.value[i + 2];
+        //     answer = this.solveTwoVariables(number1 + operad + number2) + display.removeFirstThreeOperads(answer);
+        // }
+        // this.displayString(answer);
     }
-
     static getEquasions(stringEquasion) {
-        let result = [];
-        while (true) {
-            let number = display.getFirstumberAndEndIdex(stringEquasion);
-            break;
+        let result = [[]];
+        let equasionDepth = 0;
+        let equasionWidth = 0;
+        let outOfNumbers = false;
+        let outOfOperators = false;
+        while (stringEquasion.length > 0) {
+            let operandData = this.getFirstOperadAndEndIndex(stringEquasion);
+            if (operandData[2] == 1) {
+                //Operator
+                if (stringEquasion.length == 1) {
+                    result[equasionDepth][equasionWidth] = stringEquasion.substring(0, operandData[1] + 1);
+                    break;
+                }
+                else {
+                    result[equasionDepth][equasionWidth] = stringEquasion.substring(0, operandData[1]);
+                }
+                stringEquasion = stringEquasion.substring(operandData[1], stringEquasion.length);
+                equasionWidth++;
+            }
+            else if (operandData[2] == 2) {
+                //Number
+                if (stringEquasion.length == 1) {
+                    result[equasionDepth][equasionWidth] = stringEquasion.substring(0, operandData[1] + 1);
+                    break;
+                }
+                else {
+                    result[equasionDepth][equasionWidth] = stringEquasion.substring(0, operandData[1]);
+                }
+                stringEquasion = stringEquasion.substring(operandData[1], stringEquasion.length);
+                equasionWidth++;
+            }
+            else if (operandData[2] == 3) {
+                //Equasion
+                if (stringEquasion.length == 1) {
+                    result[equasionDepth][equasionWidth] = stringEquasion.substring(0, operandData[1] + 1);
+                    break;
+                }
+                else {
+                    result[equasionDepth][equasionWidth] = stringEquasion.substring(0, operandData[1]);
+                    stringEquasion = stringEquasion.substring(operandData[1], stringEquasion.length);
+                }
+                equasionDepth++;
+                equasionWidth = 0;
+            }
+            else if (operandData == null) {
+                console.error("OperandData is null!");
+            }
+        }
+        return result;
+    }
+    static getFirstOperadAndEndIndex(value) {
+        const element = value[0];
+        if (this.isCharOperator(element)) {
+            let operatorData = this.getFirstOperatorAndEndIndex(value);
+            return [operatorData[0], operatorData[1] + 1, 1];
+        }
+        else if (this.isCharNumber(element)) {
+            let numberData = this.getFirstNumberAndEndIdex(value);
+            return [numberData[0], numberData[1], 2];
+        }
+        else if (this.isCharEquasion(element)) {
+            let equasionData = this.getFirstEquasionAndEndIndex(value);
+            return [equasionData[0], equasionData[1], 3];
+        }
+        console.error("Noting is working?");
+        return null;
+    }
+    static getFirstEquasionAndEndIndex(value) {
+        for (let i1 = 0; i1 < value.length; i1++) {
+            const startEquasion = value[i1];
+            if (this.isCharStartOfEquasion(startEquasion)) {
+                for (let i2 = i1; i2 < value.length; i2++) {
+                    const endEquasion = value[i2];
+                    if (this.isCharEndOfEquasion(endEquasion) || i1 - 1 == value.length) {
+                        return [value.substring(i1, i2), i2];
+                    }
+                }
+            }
         }
         return null;
     }
-
-    static getFirstumberAndEndIdex(value) {
+    static getFirstOperatorAndEndIndex(value) {
+        for (let i = 0; i < value.length; i++) {
+            const element = value[i];
+            if (this.isCharOperator(element)) {
+                return [element, i];
+            }
+        }
+        return null;
+    }
+    static getFirstNumberAndEndIdex(value) {
         let foundFloatingPoint = false;
+        let foundNegativeSign = false;
         for (let i = 0; i < value.length; i++) {
             let x = Number(value[i]);
-            if (x == NaN && !foundFloatingPoint) {
+            if (i == value.length - 1 && !isNaN(x)) {
+                return [(Number(value.substring(0, i + 1))), i];
+            }
+            if (!isNaN(x)) {
+                continue;
+            }
+            else if (!foundNegativeSign && value[i] == "-") {
+                foundNegativeSign = true;
+            }
+            else if (!foundFloatingPoint && value[i] == ".") {
                 foundFloatingPoint = true;
             }
             else {
                 return [(Number(value.substring(0, i))), i];
             }
         }
-        return NaN;
+        return null;
     }
-
     static removeFirstThreeOperads(value) {
         return value.substring(3, value.length);
     }
-
     static solveTwoVariables(value) {
         switch (value[1]) {
             case this.operators[0]: return (String)(parseInt(value[0]) * parseInt(value[2]));
@@ -103,6 +237,13 @@ class display {
         }
     }
 }
-display.operators = ["·", "/", "+", "-"];
+//Operators ·, /, +, -, √
+//Numbers 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+//Equasions (1), (1 + 1), (165 - 52), (...)
+//Operand ·, 1, (2), -, (143 · 33), ...
+display.operators = ["·", "/", "+", "-", "√"];
+display.numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+display.equasions = ["(", ")", "√"];
 display.multiply = "·";
+display.sqrt = "√";
 const mainController = new controller(document.getElementById("userinput"), document.getElementById("output"));
